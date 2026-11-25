@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+*.egg-info/
+
+# Build
+build/
+dist/
+
+# Keine echten Klassenbuch-PDFs oder Berichtshefte ins Repo
+*.pdf
+*.docx
+!docs/*.docx
+~$*
+
+# Lokales
+fixtures_out/
+*.log
