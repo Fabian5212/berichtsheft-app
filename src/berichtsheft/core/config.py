@@ -128,13 +128,9 @@ class Formatting:
 
 @dataclass
 class Profile:
-    # Persönliche Daten
+    # Persönliche Daten – bewusst nur Name und Jahrgang; Dozent, Woche und Datum kommen aus den PDFs
     name: str = ""
-    beruf: str = ""
-    betrieb: str = ""
-    bildungstraeger: str = ""
-    ausbilder: str = ""
-    klasse: str = ""
+    jahrgang: str = ""                 # landet im Feld "Ausbildungsjahr" bzw. {{JAHRGANG}}
     # Dateien
     template_path: str = ""
     output_dir: str = ""
@@ -185,11 +181,7 @@ class Profile:
     def placeholder_values(self) -> dict[str, str]:
         return {
             "NAME": self.name,
-            "BERUF": self.beruf,
-            "BETRIEB": self.betrieb,
-            "BILDUNGSTRAEGER": self.bildungstraeger,
-            "AUSBILDER": self.ausbilder,
-            "KLASSE": self.klasse,
+            "JAHRGANG": self.jahrgang,
         }
 
     def suggest_nachweis_nr(self, monday: dt.date | None) -> int | None:

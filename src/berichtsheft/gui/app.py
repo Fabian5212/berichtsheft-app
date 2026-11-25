@@ -208,7 +208,7 @@ class MainWindow(_Base):
 
     def _refresh_profile(self) -> None:
         p = self.config_obj.profile
-        self.profile_label.configure(text=f"Profil: {p.name or '—'}" + (f" · {p.beruf}" if p.beruf else ""))
+        self.profile_label.configure(text=f"Profil: {p.name or '—'}" + (f" · Jahrgang {p.jahrgang}" if p.jahrgang else ""))
         names = list(self.config_obj.profiles)
         self.profile_menu.configure(values=names)
         self.profile_menu.set(self.config_obj.active_profile)

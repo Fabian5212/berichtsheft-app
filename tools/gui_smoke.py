@@ -68,7 +68,7 @@ def main() -> int:
         fixtures.make_template(template)
 
     cfg_path = tmp / "config.json"
-    cfg = AppConfig(profiles={"Standard": Profile(name="Max Mustermann", beruf="Fachinformatiker",
+    cfg = AppConfig(profiles={"Standard": Profile(name="Max Mustermann", jahrgang="2025",
                                                   template_path=str(template), output_dir=str(out / "ausgabe"),
                                                   last_nachweis_nr=6, last_week_monday="2026-06-08")})
     save_config(cfg, cfg_path)

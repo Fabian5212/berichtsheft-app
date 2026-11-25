@@ -49,7 +49,7 @@ from .models import WORKDAY_CODES, Issue, Severity
 
 PLACEHOLDER_RE = re.compile(r"\{\{\s*([A-Za-z_]+)\s*\}\}")
 KNOWN_PLACEHOLDERS: tuple[str, ...] = (
-    "NAME", "BERUF", "BETRIEB", "BILDUNGSTRAEGER", "AUSBILDER", "KLASSE",
+    "NAME", "JAHRGANG",
     "NACHWEIS_NR", "VOM", "BIS", "JAHR", "DATUM", "DOZENT",
     *(f"TEXT_{c.upper()}" for c in WORKDAY_CODES),
     *(f"LF_{c.upper()}" for c in WORKDAY_CODES),
@@ -266,6 +266,7 @@ class TemplateInfo:
     vom_tc: object | None = None
     bis_tc: object | None = None
     name_tc: object | None = None
+    jahrgang_tc: object | None = None
     trainer_tc: object | None = None
     has_signature_date: bool = False
     column_method: str = ""
@@ -291,6 +292,8 @@ class TemplateInfo:
             found.append("bis" + (f" ({self.bis:%d.%m.%Y})" if self.bis else ""))
         if self.name_tc is not None:
             found.append("Name")
+        if self.jahrgang_tc is not None:
+            found.append("Jahrgang")
         if self.trainer_tc is not None:
             found.append("Trainer")
         if self.has_signature_date:
@@ -370,6 +373,8 @@ def _analyze(doc: DocxDocument, path: Path | None = None) -> TemplateInfo:
                 elif t.startswith("name") and "auszubildend" in t and nxt is not None and info.name_tc is None:
                     if not PLACEHOLDER_RE.search(_tc_text(nxt)):
                         info.name_tc = nxt
+                elif (t.startswith("ausbildungsjahr") or t.startswith("jahrgang")) and nxt is not None                         and info.jahrgang_tc is None:
+                    info.jahrgang_tc = nxt
                 elif (t.startswith("trainer") or t.startswith("dozent") or t.startswith("ausbilder")) and ":" in t \
                         and info.trainer_tc is None and not PLACEHOLDER_RE.search(_tc_text(tc)):
                     info.trainer_tc = tc
@@ -524,6 +529,9 @@ def fill_template(template_path: Path, out_path: Path, data: ReportData, options
         name = data.profile_values.get("NAME") or data.profile_values.get("name")
         if info.name_tc is not None and name:
             _set_tc_text_keep_runs(info.name_tc, name)
+        jahrgang = data.profile_values.get("JAHRGANG")
+        if info.jahrgang_tc is not None and jahrgang:
+            _set_tc_text_keep_runs(info.jahrgang_tc, jahrgang)
         if info.trainer_tc is not None and data.trainers:
             label = _tc_text(info.trainer_tc).split(":", 1)[0]
             _set_tc_text_keep_runs(info.trainer_tc, f"{label}: {', '.join(data.trainers)}")

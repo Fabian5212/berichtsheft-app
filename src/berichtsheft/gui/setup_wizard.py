@@ -38,7 +38,8 @@ class SetupWizard(ctk.CTkToplevel):
         self.pages: list[ctk.CTkFrame] = []
         # Seite 1
         p1 = ctk.CTkFrame(self, fg_color="transparent")
-        ctk.CTkLabel(p1, text="Diese Angaben werden in deine Vorlage eingesetzt (Platzhalter wie {{NAME}}).",
+        ctk.CTkLabel(p1, text=("Hier brauchst du nur deinen Namen und deinen Jahrgang. Dozent, Woche und Datum "
+                               "liest die App jede Woche automatisch aus den Klassenbuch-PDFs."),
                      anchor="w", wraplength=600, justify="left").pack(fill="x", pady=(0, 10))
         self.personal = PersonalForm(p1, self.profile)
         self.personal.pack(fill="x")

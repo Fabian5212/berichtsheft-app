@@ -30,7 +30,7 @@ def week_pdfs(fx_dir) -> list[Path]:
 @pytest.fixture()
 def profile():
     from berichtsheft.core.config import Profile
-    return Profile(name="Max Mustermann", beruf="Fachinformatiker Systemintegration", betrieb="Musterfirma GmbH")
+    return Profile(name="Max Mustermann", jahrgang="2025")
 
 
 @pytest.fixture()

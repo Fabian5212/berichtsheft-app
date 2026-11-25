@@ -175,12 +175,12 @@ def make_template(path: Path, name: str = "Max Mustermann", nr: str = "7", vom: 
     r0 = _merge_row(table, 0, [2, 3, 1, 2, 1])
     _write(r0[0], "Name des/der Auszubildenden", bold=True, size=10)
     _write(r0[1], name)
-    _write(r0[2], "Klasse: {{KLASSE}}" if placeholders else "Klasse: K1", bold=True, size=10)
+    _write(r0[2], "Klasse: K1", bold=True, size=10)
     _write(r0[3], "Ausbildungsnachweis Nr.", bold=True, size=10)
     _write(r0[4], nr)
     r1 = _merge_row(table, 1, [2, 1, 2, 4])
     _write(r1[0], "Ausbildungsjahr", bold=True, size=10)
-    _write(r1[1], "{{JAHR}}" if placeholders else "2026")
+    _write(r1[1], "{{JAHRGANG}}" if placeholders else "2026")
     _write(r1[3], "Trainer/Ausbilder: {{DOZENT}}" if placeholders else "Trainer/Ausbilder: Erika Beispiel",
            bold=True, size=10)
     r2 = _merge_row(table, 2, [2, 1, 1, 1, 4])
@@ -225,9 +225,9 @@ def make_placeholder_template(path: Path, split_runs: bool = True) -> Path:
         p.add_run("Name: {{NA")
         r = p.add_run("ME")
         r.bold = True
-        p.add_run("}} – Beruf: {{BERUF}}")
+        p.add_run("}} – Jahrgang: {{JAHRGANG}}")
     else:
-        p.add_run("Name: {{NAME}} – Beruf: {{BERUF}}")
+        p.add_run("Name: {{NAME}} – Jahrgang: {{JAHRGANG}}")
     doc.add_paragraph("Nachweis {{NACHWEIS_NR}} vom {{VOM}} bis {{BIS}} ({{JAHR}}), Dozent: {{DOZENT}}")
     table = doc.add_table(rows=6, cols=3)
     for c, t in zip(table.rows[0].cells, ["Tag", "Tätigkeit", "Lernfeld"]):

@@ -17,7 +17,7 @@ def _data(**kw):
     days = {c: DayContent(dt.date(2026, 6, 15 + i), f"Text für {c}.", "LF-ZQ9x")
             for i, c in enumerate(["Mo", "Di", "Mi", "Do", "Fr"])}
     base = dict(nachweis_nr=12, vom=dt.date(2026, 6, 15), bis=dt.date(2026, 6, 19), days=days,
-                trainers=["Max Mustermann"], profile_values={"NAME": "Erika Neu", "BERUF": "FISI"},
+                trainers=["Max Mustermann"], profile_values={"NAME": "Erika Neu", "JAHRGANG": "2025"},
                 signature_date=dt.date(2026, 6, 19))
     base.update(kw)
     return ReportData(**base)
@@ -43,7 +43,7 @@ def test_analyze_gfn_template(fx_dir):
 
 def test_analyze_placeholder_template(fx_dir):
     info = analyze_template(fx_dir / "Vorlage_Platzhalter.docx")
-    assert {"NAME", "BERUF", "VOM", "BIS", "NACHWEIS_NR", "JAHR", "DOZENT"} <= set(info.placeholders)
+    assert {"NAME", "JAHRGANG", "VOM", "BIS", "NACHWEIS_NR", "JAHR", "DOZENT"} <= set(info.placeholders)
     assert info.unknown_placeholders == ["FOO"]
     assert "Platzhalter: NAME" in info.summary()
 
@@ -102,7 +102,8 @@ def test_header_fields(fx_dir, tmp_path):
     assert rows[0][2] == "Erika Neu"
     assert rows[2][2] == "15.06."        # Stil der Vorlage (ohne Jahr) bleibt
     assert rows[2][4] == "19.06.26"
-    assert rows[1][5] == "Trainer/Ausbilder: Max Mustermann"
+    assert rows[1][5] == "Trainer/Ausbilder: Max Mustermann"   # Dozent aus den PDFs
+    assert rows[1][2] == "2025"                                  # Jahrgang aus dem Profil
     # Formatierung der Kopfzelle (fett, 10 pt) bleibt
     run = Document(str(out)).tables[0].rows[1].cells[5].paragraphs[0].runs[0]
     assert run.bold and run.font.size.pt == 10
@@ -139,7 +140,7 @@ def test_placeholders_split_runs_header_and_body(fx_dir, tmp_path):
     fill_template(fx_dir / "Vorlage_Platzhalter.docx", out, _data(), WriteOptions())
     doc = Document(str(out))
     body = [p.text for p in doc.paragraphs]
-    assert body[0] == "Name: Erika Neu – Beruf: FISI"
+    assert body[0] == "Name: Erika Neu – Jahrgang: 2025"
     assert body[1] == "Nachweis 12 vom 15.06.2026 bis 19.06.2026 (2026), Dozent: Max Mustermann"
     assert "{{FOO}}" in body[-1]            # unbekannte bleiben stehen
     assert doc.sections[0].header.paragraphs[0].text == "Berichtsheft Erika Neu"
@@ -167,6 +168,7 @@ def test_example_template_from_docs(tmp_path):
     doc = Document(str(out))
     rows = [[c.text for c in r.cells] for r in doc.tables[0].rows]
     assert rows[0][2] == "Erika Neu" and rows[0][8] == "12"
+    assert rows[1][2] == "2025"
     assert rows[2][2] == "15.06.2026" and rows[2][4] == "19.06.2026"
     assert rows[1][5] == "Trainer/Ausbilder: Max Mustermann"
     assert rows[4][1] == "Text für Mo."

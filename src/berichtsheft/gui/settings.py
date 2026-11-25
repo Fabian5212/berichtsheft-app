@@ -26,11 +26,7 @@ from .widgets import ERR_COLOR, MUTED, OK_COLOR, WARN_COLOR, LabeledEntry, lines
 
 PERSONAL_FIELDS: list[tuple[str, str]] = [
     ("name", "Name"),
-    ("beruf", "Ausbildungsberuf"),
-    ("betrieb", "Ausbildungsbetrieb"),
-    ("bildungstraeger", "Bildungsträger"),
-    ("ausbilder", "Ausbilder:in"),
-    ("klasse", "Klasse"),
+    ("jahrgang", "Jahrgang / Ausbildungsjahr"),
 ]
 
 

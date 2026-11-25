@@ -24,7 +24,7 @@ Beim ersten Start öffnet sich der **Einrichtungs-Assistent**:
 
 | Schritt | Was passiert |
 |---|---|
-| Persönliche Daten | Name, Ausbildungsberuf, Betrieb, Bildungsträger, Ausbilder:in, Klasse |
+| Persönliche Daten | nur **Name** und **Jahrgang**. Dozent:in, Woche und Datum liest die App jede Woche aus den PDFs |
 | Blanko-Vorlage | Deine leere Berichtsheft-`.docx` hochladen. Die App kopiert sie in ihren Datenordner und meldet, was sie erkannt hat, z. B. *„5 Tageszeilen gefunden; Felder: Nachweis-Nr., vom, bis“* |
 | Nachweis-Nr. & Ablage | Wie die Nummer weiterzählen soll (siehe unten) und wohin die fertigen Dateien kommen |
 
@@ -53,7 +53,7 @@ Erreichbar über **Einstellungen** oben rechts:
 
 ![Einstellungen](docs/screenshots/einstellungen.png)
 
-- **Profil:** persönliche Daten, Vorlage, Ausgabeordner, Muster für den Dateinamen (`{NR}`, `{VOM}`, `{BIS}`, `{JAHR}`)
+- **Profil:** Name, Jahrgang, Vorlage, Ausgabeordner, Muster für den Dateinamen (`{NR}`, `{VOM}`, `{BIS}`, `{JAHR}`)
 - **Formatierung:** Schriftgröße und Fettdruck für Tagestext und Lernfeld, maximale Zeichen pro Tag (Standard 430). Schriftgröße `0` bedeutet: so wie in der Vorlage.
   Außerdem lässt sich einstellen, ob Nachweis-Nr., Zeitraum, Name und Dozent:in in die Kopfzeilen geschrieben werden, ob das Lernfeld eingetragen wird, ob das Datum bei der Unterschrift gesetzt wird und was in der Spalte „Std.“ steht.
 - **Zeilen ignorieren:** Zeilen aus dem Klassenbuch, die nie im Bericht landen sollen. Dozent:innen werden **automatisch** herausgefiltert.
@@ -66,14 +66,14 @@ Erreichbar über **Einstellungen** oben rechts:
 Die App findet in deiner Vorlage automatisch:
 
 - **Tageszeilen:** Zeilen einer Tabelle, deren erste Zelle `Mo`, `Di`, `Mi`, `Do` oder `Fr` ist (auch `Montag` …). Der Text kommt in die breiteste Zelle der Zeile, das Lernfeld in die Spalte mit der Überschrift „Lernfeld“.
-- **Kopffelder:** die Zelle rechts neben „Ausbildungsnachweis Nr.“, „… vom“, „bis“ und „Name des/der Auszubildenden“ sowie die Zelle „Trainer/Ausbilder: …“
+- **Kopffelder:** die Zelle rechts neben „Name des/der Auszubildenden“ und „Ausbildungsjahr“ (aus dem Profil), „Ausbildungsnachweis Nr.“, „… vom“ und „bis“ (aus den PDFs) sowie die Zelle „Trainer/Ausbilder: …“ (Dozent:in aus den PDFs)
 - **Unterschriftsdatum:** das Datum in der Zeile über „… Unterschrift …“
 
 Wenn deine Vorlage anders aufgebaut ist, schreibst du **Platzhalter** an die gewünschten Stellen, auch in Kopf- und Fußzeilen:
 
 | Platzhalter | Inhalt |
 |---|---|
-| `{{NAME}}` `{{BERUF}}` `{{BETRIEB}}` `{{BILDUNGSTRAEGER}}` `{{AUSBILDER}}` `{{KLASSE}}` | aus deinem Profil |
+| `{{NAME}}` `{{JAHRGANG}}` | aus deinem Profil |
 | `{{NACHWEIS_NR}}` | Nachweis-Nr. |
 | `{{VOM}}` `{{BIS}}` | Montag/Freitag der Woche (TT.MM.JJJJ) |
 | `{{JAHR}}` | Jahr der Woche |
