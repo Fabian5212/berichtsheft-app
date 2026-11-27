@@ -47,7 +47,7 @@ def test_other_week_is_warned_and_ignored(tmp_path, week_pdfs, settings):
     other = fixtures.make_klassenbuch_pdf(tmp_path / "alt.pdf", dt.date(2026, 6, 8), [fixtures.FakeLesson(["Alt"])])
     plan = plan_from_paths([*week_pdfs, other], settings)
     assert plan.monday == dt.date(2026, 6, 15)
-    assert any("mehreren Wochen" in i.message for i in plan.issues)
+    assert any("2 Wochen gefunden" in i.message for i in plan.issues)
     assert "Alt" not in plan.days["Mo"].text
 
 
@@ -68,3 +68,17 @@ def test_bad_pdf_does_not_stop_others(tmp_path, week_pdfs, settings):
 
 def test_monday_of():
     assert monday_of(dt.date(2026, 6, 19)) == dt.date(2026, 6, 15)
+
+
+def test_choose_week_from_folder(tmp_path, settings):
+    from berichtsheft.core.week import available_weeks, build_week, parse_many
+    fixtures.make_week(tmp_path / "kw25", dt.date(2026, 6, 15))
+    fixtures.make_week(tmp_path / "kw26", dt.date(2026, 6, 22), days=3)
+    res = parse_many(sorted(tmp_path.rglob("*.pdf")))
+    weeks = available_weeks(res.parsed)
+    assert weeks == [(dt.date(2026, 6, 22), 3), (dt.date(2026, 6, 15), 5)]   # neueste zuerst
+    default = build_week(res.parsed, settings, res.issues)
+    assert default.monday == dt.date(2026, 6, 15)                            # meiste PDFs
+    chosen = build_week(res.parsed, settings, res.issues, dt.date(2026, 6, 22))
+    assert chosen.monday == dt.date(2026, 6, 22) and list(chosen.days) == ["Mo", "Di", "Mi"]
+    assert any("2 Wochen" in i.message for i in chosen.issues)

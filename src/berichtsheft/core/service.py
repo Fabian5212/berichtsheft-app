@@ -9,11 +9,20 @@ from pathlib import Path
 from .config import Profile
 from .docx_writer import DayContent, ReportData, TemplateInfo, WriteOptions, analyze_template, build_filename, fill_template
 from .models import Issue, Severity, WeekPlan
-from .week import plan_from_paths
+from .week import ParseResult, build_week, parse_many, plan_from_paths
 
 
 def prepare_week(pdf_paths: list[Path], profile: Profile) -> WeekPlan:
     return plan_from_paths(pdf_paths, profile.summarizer_settings())
+
+
+def parse_pdfs(pdf_paths: list[Path]) -> ParseResult:
+    """Nur lesen (einmal), danach kann mit ``plan_for_week`` beliebig oft die Woche gewechselt werden."""
+    return parse_many(sorted(pdf_paths))
+
+
+def plan_for_week(result: ParseResult, profile: Profile, monday: dt.date | None = None) -> WeekPlan:
+    return build_week(result.parsed, profile.summarizer_settings(), result.issues, monday)
 
 
 @dataclass

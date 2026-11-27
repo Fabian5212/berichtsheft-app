@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import os
 import re
 import subprocess
@@ -16,7 +17,16 @@ from ..core.config import AppConfig, ConfigError, load_config, save_config
 from ..core.docx_writer import TemplateInfo, analyze_template
 from ..core.logging_setup import get_logger, log_file_path
 from ..core.models import Severity, WeekPlan
-from ..core.service import HeaderValues, create_report, output_path, prepare_week, remember_week, suggest_header
+from ..core.service import (
+    HeaderValues,
+    create_report,
+    output_path,
+    parse_pdfs,
+    plan_for_week,
+    remember_week,
+    suggest_header,
+)
+from ..core.week import ParseResult, available_weeks
 from .settings import SettingsWindow
 from .setup_wizard import SetupWizard
 from .widgets import ERR_COLOR, MUTED, OK_COLOR, WARN_COLOR, DayCard, LogView, parse_user_date
@@ -69,6 +79,8 @@ class MainWindow(_Base):
         self.config_obj = self._load_config()
         self.pdfs: list[Path] = []
         self.plan: WeekPlan | None = None
+        self.parse_result: ParseResult | None = None
+        self.week_choices: dict[str, object] = {}
         self.template_info: TemplateInfo | None = None
         self.cards: dict[str, DayCard] = {}
         self.last_output: Path | None = None
@@ -108,16 +120,24 @@ class MainWindow(_Base):
         self.drop = ctk.CTkFrame(body, height=86, border_width=2, border_color=("gray70", "gray35"))
         self.drop.grid(row=0, column=0, sticky="ew")
         self.drop.grid_columnconfigure(0, weight=1)
-        dnd_text = "Klassenbuch-PDFs hierher ziehen" if self._dnd_ok() else "Klassenbuch-PDFs auswählen"
+        dnd_text = "Klassenbuch-PDFs oder ganzen Ordner hierher ziehen" if self._dnd_ok() else "Klassenbuch-PDFs oder Ordner auswählen"
         self.drop_label = ctk.CTkLabel(self.drop, text=f"⬇  {dnd_text}", font=ctk.CTkFont(size=15))
         self.drop_label.grid(row=0, column=0, pady=(14, 0))
-        self.drop_sub = ctk.CTkLabel(self.drop, text="eine PDF pro Tag · Mo–Fr derselben Woche", text_color=MUTED)
-        self.drop_sub.grid(row=1, column=0, pady=(0, 12))
+        self.drop_sub = ctk.CTkLabel(self.drop, text="eine PDF pro Tag · enthält der Ordner mehrere Wochen, erscheint hier eine Wochenauswahl",
+                                     text_color=MUTED)
+        self.drop_sub.grid(row=1, column=0, pady=(0, 8))
+        self.week_row = ctk.CTkFrame(self.drop, fg_color="transparent")
+        self.week_row.grid(row=2, column=0, pady=(0, 10))
+        ctk.CTkLabel(self.week_row, text="Woche:").grid(row=0, column=0, padx=(0, 6))
+        self.week_menu = ctk.CTkOptionMenu(self.week_row, values=["–"], command=self._choose_week, width=260)
+        self.week_menu.grid(row=0, column=1)
+        self.week_row.grid_remove()
         btns = ctk.CTkFrame(self.drop, fg_color="transparent")
-        btns.grid(row=0, column=1, rowspan=2, padx=14)
+        btns.grid(row=0, column=1, rowspan=3, padx=14, pady=6)
         ctk.CTkButton(btns, text="PDFs auswählen …", command=self.choose_pdfs, width=150).grid(row=0, column=0, pady=3)
+        ctk.CTkButton(btns, text="Ordner auswählen …", command=self.choose_folder, width=150).grid(row=1, column=0, pady=3)
         ctk.CTkButton(btns, text="Liste leeren", command=self.clear_pdfs, width=150, fg_color="transparent",
-                      border_width=1, text_color=("gray10", "gray90")).grid(row=1, column=0, pady=3)
+                      border_width=1, text_color=("gray10", "gray90")).grid(row=2, column=0, pady=3)
         if self._dnd_ok():
             for w in (self.drop, self.drop_label, self.drop_sub):
                 w.drop_target_register(DND_FILES)
@@ -127,6 +147,9 @@ class MainWindow(_Base):
         self.days_frame = ctk.CTkScrollableFrame(body, label_text="Erkannte Tage")
         self.days_frame.grid(row=1, column=0, sticky="nsew", pady=(10, 0))
         self.days_frame.grid_columnconfigure(0, weight=1)
+        if self._dnd_ok():  # auch auf die Tagesliste ziehen können
+            self.days_frame.drop_target_register(DND_FILES)
+            self.days_frame.dnd_bind("<<Drop>>", self._on_drop)
         self._empty_hint()
 
         # Rechte Spalte
@@ -260,11 +283,21 @@ class MainWindow(_Base):
         files = filedialog.askopenfilenames(title="Klassenbuch-PDFs auswählen", filetypes=[("PDF", "*.pdf")])
         self.add_paths([Path(f) for f in files])
 
+    def choose_folder(self) -> None:
+        d = filedialog.askdirectory(title="Ordner mit Klassenbuch-PDFs auswählen")
+        if d:
+            self.add_paths([Path(d)])
+
     def add_paths(self, paths: list[Path]) -> None:
         added = 0
         for p in paths:
             if p.is_dir():
-                candidates = sorted(p.glob("*.pdf"))
+                # ganzer Ordner inkl. Unterordnern
+                candidates = sorted(c for c in p.rglob("*") if c.is_file() and c.suffix.lower() == ".pdf")
+                if not candidates:
+                    self.log_view.add(f"Keine PDFs im Ordner „{p.name}“ gefunden.", "warnung")
+                else:
+                    self.log_view.add(f"Ordner „{p.name}“: {len(candidates)} PDF(s) gefunden.")
             else:
                 candidates = [p]
             for c in candidates:
@@ -281,6 +314,8 @@ class MainWindow(_Base):
     def clear_pdfs(self) -> None:
         self.pdfs.clear()
         self.plan = None
+        self.parse_result = None
+        self.week_row.grid_remove()
         self.cards.clear()
         self._empty_hint()
         for v in (self.nr_var, self.vom_var, self.bis_var):
@@ -290,15 +325,45 @@ class MainWindow(_Base):
         self.log_view.add("Liste geleert.")
 
     def _process(self) -> None:
+        """PDFs (einmal) lesen, Wochenauswahl füllen, dann die gewählte Woche aufbauen."""
         self.configure(cursor="watch")
         self.update_idletasks()
         try:
-            plan = prepare_week(self.pdfs, self.config_obj.profile)
+            self.parse_result = parse_pdfs(self.pdfs)
         finally:
             self.configure(cursor="")
+        weeks = available_weeks(self.parse_result.parsed)
+        self.week_choices = {
+            f"{m:%d.%m.}–{m + dt.timedelta(days=4):%d.%m.%Y}  ({n} PDF{'s' if n != 1 else ''})": m for m, n in weeks
+        }
+        if len(weeks) > 1:
+            self.week_menu.configure(values=list(self.week_choices))
+            self.week_row.grid()
+        else:
+            self.week_row.grid_remove()
+        self._show_week(None)
+
+    def _choose_week(self, label: str) -> None:
+        monday = self.week_choices.get(label)
+        if monday is not None:
+            self._show_week(monday)  # type: ignore[arg-type]
+
+    def _show_week(self, monday: dt.date | None) -> None:
+        assert self.parse_result is not None
+        plan = plan_for_week(self.parse_result, self.config_obj.profile, monday)
         self.plan = plan
-        for issue in plan.issues:
-            self.log_view.issue(issue)
+        if len(self.week_choices) > 1 and plan.monday is not None:
+            label = next((k for k, v in self.week_choices.items() if v == plan.monday), None)
+            if label:
+                self.week_menu.set(label)
+        if monday is None:
+            for issue in plan.issues:
+                if "Wochen gefunden" in issue.message:
+                    self.log_view.add(issue.message.split(" Verwendet")[0] + " – gewünschte Woche bei „Woche:“ auswählen.", "warnung")
+                else:
+                    self.log_view.issue(issue)
+        elif plan.monday is not None:
+            self.log_view.add(f"Woche gewechselt: {plan.monday:%d.%m.}–{plan.friday:%d.%m.%Y}")
         for w in self.days_frame.winfo_children():
             w.destroy()
         self.cards.clear()

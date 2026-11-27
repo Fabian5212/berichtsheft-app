@@ -3,7 +3,7 @@
 Eine Windows-App für Umschüler:innen und Azubis: Sie macht aus den **Klassenbuch-PDFs** (GFN-„Themendokumentation“) in wenigen Klicks ein fertiges **Berichtsheft (Word)**.
 
 1. Beim ersten Start persönliche Daten eintragen und die eigene Blanko-Vorlage hochladen
-2. Jede Woche die PDFs ins Fenster ziehen
+2. Jede Woche die PDFs oder einfach den ganzen Klassenbuch-Ordner ins Fenster ziehen
 3. Vorschau prüfen, Texte bei Bedarf anpassen, auf **„Berichtsheft erstellen“** klicken
 
 ![Hauptfenster](docs/screenshots/hauptfenster.png)
@@ -32,7 +32,8 @@ Beim ersten Start öffnet sich der **Einrichtungs-Assistent**:
 
 ### Jede Woche
 
-1. Die Klassenbuch-PDFs der Woche (eine pro Tag) in das obere Feld ziehen **oder** auf „PDFs auswählen …“ klicken. Ganze Ordner gehen auch.
+1. Die Klassenbuch-PDFs der Woche (eine pro Tag) in das obere Feld ziehen **oder** gleich den **ganzen Ordner** hineinziehen, Unterordner inklusive. Alternativ: „PDFs auswählen …“ bzw. „Ordner auswählen …“.
+   Liegen im Ordner PDFs aus mehreren Wochen, erscheint ein Feld **„Woche:“**, in dem du die gewünschte Woche auswählst. Vorausgewählt ist die Woche mit den meisten PDFs.
 2. Für jeden erkannten Tag siehst du Datum, Lernfeld, Dozent:in und den Status (✓ / ⚠).
 3. Den Text in den Feldern kannst du direkt ändern. Der Zähler zeigt die Zeichen, mit „Zurücksetzen“ kommt der generierte Text zurück.
 4. Nachweis-Nr. und Zeitraum sind schon ausgefüllt und lassen sich ändern. Darunter siehst du den Dateinamen, z. B.

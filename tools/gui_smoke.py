@@ -63,7 +63,10 @@ def main() -> int:
     pdf_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else tmp / "pdf"
     template = Path(sys.argv[3]) if len(sys.argv) > 3 else tmp / "Vorlage.docx"
     if len(sys.argv) <= 2:
-        fixtures.make_week(pdf_dir)
+        # Ordner mit zwei Wochen in Unterordnern (testet Ordner-Drop + Wochenauswahl)
+        import datetime as dt
+        fixtures.make_week(pdf_dir / "KW25", dt.date(2026, 6, 15))
+        fixtures.make_week(pdf_dir / "KW26", dt.date(2026, 6, 22), days=3)
     if len(sys.argv) <= 3:
         fixtures.make_template(template)
 
@@ -93,7 +96,7 @@ def main() -> int:
 
     def step1() -> None:
         shot("01_leer")
-        app.add_paths(sorted(pdf_dir.glob("*.pdf")))
+        app.add_paths([pdf_dir])  # ganzer Ordner, wie beim Hineinziehen
         app.after(600, step2)
 
     def step2() -> None:
@@ -103,6 +106,10 @@ def main() -> int:
 
     def step3() -> None:
         shot("03_erstellt")
+        if len(app.week_choices) > 1:  # Woche umschalten testen
+            other = [k for k, v in app.week_choices.items() if v != app.plan.monday][0]
+            app._choose_week(other)
+            results.append(f"Woche gewechselt -> {app.plan.monday} ({len(app.plan.days)} Tage)")
         app.open_settings()
         app.after(900, step4)
 

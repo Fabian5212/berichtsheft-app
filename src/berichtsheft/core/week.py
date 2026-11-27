@@ -44,8 +44,20 @@ def _lesson_key(lesson: Lesson) -> tuple:
     return (lesson.number, tuple(lesson.topics))
 
 
-def build_week(parsed: list[ParsedPdf], settings: SummarizerSettings, base_issues: list[Issue] | None = None) -> WeekPlan:
-    """Tage Mo–Fr bilden, doppelte/fremde Tage melden und Texte erzeugen."""
+def available_weeks(parsed: list[ParsedPdf]) -> list[tuple[dt.date, int]]:
+    """Alle Wochen (Montag, Anzahl PDFs) in den PDFs, neueste zuerst. Wochenenden zählen nicht."""
+    weeks = Counter(monday_of(p.date) for p in parsed if p.date.weekday() < 5)
+    return sorted(weeks.items(), key=lambda kv: kv[0], reverse=True)
+
+
+def build_week(parsed: list[ParsedPdf], settings: SummarizerSettings, base_issues: list[Issue] | None = None,
+               monday: dt.date | None = None) -> WeekPlan:
+    """Tage Mo–Fr bilden, doppelte/fremde Tage melden und Texte erzeugen.
+
+    ``monday`` wählt bei PDFs aus mehreren Wochen die gewünschte Woche aus
+    (z. B. wenn ein ganzer Ordner hineingezogen wurde). Ohne Angabe wird die
+    Woche mit den meisten PDFs genommen, bei Gleichstand die neueste.
+    """
     issues: list[Issue] = list(base_issues or [])
     if not parsed:
         return WeekPlan(None, {}, issues)
@@ -60,20 +72,18 @@ def build_week(parsed: list[ParsedPdf], settings: SummarizerSettings, base_issue
     if not workdays:
         return WeekPlan(None, {}, issues)
 
-    # Mehrere Wochen? -> die Woche mit den meisten PDFs nehmen
+    # Mehrere Wochen? -> gewählte Woche, sonst die mit den meisten PDFs (bei Gleichstand die neueste)
     weeks = Counter(monday_of(p.date) for p in workdays)
-    monday, _ = max(weeks.items(), key=lambda kv: (kv[1], kv[0]))
+    if monday is None or monday not in weeks:
+        monday, _ = max(weeks.items(), key=lambda kv: (kv[1], kv[0]))
     if len(weeks) > 1:
         others = sorted(w for w in weeks if w != monday)
         names = ", ".join(f"{w:%d.%m.}–{w + dt.timedelta(days=4):%d.%m.%Y}" for w in others)
         issues.append(Issue(
             Severity.WARNING,
-            f"PDFs aus mehreren Wochen gefunden. Verwendet wird {monday:%d.%m.}–{monday + dt.timedelta(days=4):%d.%m.%Y}; "
-            f"ignoriert: {names}",
+            f"PDFs aus {len(weeks)} Wochen gefunden. Verwendet wird {monday:%d.%m.}–{monday + dt.timedelta(days=4):%d.%m.%Y}; "
+            f"nicht verwendet: {names}",
         ))
-        for p in workdays:
-            if monday_of(p.date) != monday:
-                issues.append(Issue(Severity.WARNING, f"gehört zu einer anderen Woche ({p.date:%d.%m.%Y})", p.path.name))
     in_week = [p for p in workdays if monday_of(p.date) == monday]
 
     # Mehrere PDFs pro Tag zusammenführen
